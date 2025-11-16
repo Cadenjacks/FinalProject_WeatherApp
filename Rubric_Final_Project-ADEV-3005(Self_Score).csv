@@ -1,0 +1,38 @@
+Category,Criterion,Criterion Description,Points Acquired,Max Points,
+,,,,,
+MILESTONE 1,,,,,
+Scraping,Name,WeatherScraper class has been created inside a scrape_weather module.,,6,Yes
+,Parse,Code uses the Python HTMLParser class to parse the website html.,,6,"Yes - No data, so then resorts to CSV"
+,Collect Data,"Code successfully scrapes the min, max & mean temperature and date, and stores them in a dictionary of dictionaries.",,6,Yes
+,Detect End,"Code successfully scrapes weather data from the current date, as far back in time as is available. Last available weather date should be automatically detected in some way, not hard coded.",,6,Yes
+,I/O,"Code receives a url to scrape as input, and outputs the scraped data for use in other parts of the program.",,6,Yes
+Database,Name,A class named DBOperations has been created inside a db_operations module.,,4,Yes
+,Context Manager,Code uses a database context manager named DBCM correctly. DBCM returns a cursor object in __enter__. DBCM commits changes and closes all connection objects in __exit__,,4,Yes
+,Initialise,"Code successfully initializes the database and creates the necessary tables/fields if they don't already exist, every time the pro? gram starts.",,4,Yes
+,Store,"Code receives & processes date, min, max & mean temperature as input, checks for duplicates in some way, and successfully stores it in the database.",,4,Yes
+,I/O,DBOperations outputs the data required for plotting.,,4,Yes
+,,,,,
+MILESTONE 2,,,,,
+Plotting,Name,A class named PlotOperations has been created inside a plot_operations module.,,3,
+,Box Plot,Code successfully uses Python matplotlib to create a basic boxplot of mean temperature data with the same labels/design given in the example.,,3,
+,Line Plot,Code successfully uses Python matplotlib to create a line plot of mean temperature data for a particular month.,,3,
+,Process,PlotOperations receives & processes the data to be used in the plots. Data is processed in PlotOperations not DBOperations.,,3,
+,Format,Plots are formatted nicely and include axis labels and title. Title includes the correct year or month/day. No axis items are overlapping,,3,
+User Interaction,Name,A class named WeatherProcessor has been created in a module named weather_processor.,,5,
+,Fetch Data,"On startup, code successfully prompts the user to download a full set of weather data, or update their existing data.",,5,
+,Plot,"Code successfully prompts the user for a date range of interest to display. From year, to year for box plot. Year and month for line plot User prompt shows date format example.",,5,
+,Manage,Code successfully launches and manages all the other tasks.,,5,
+,,,,,
+MILESTONE 3,,,,,
+Packaging,Create,"Successfully create a Windows package installer using Inno Setup, which includes a logo and license agreement.",,5,
+,Install & Run,Package can be in? stalled successfully on Windows. Program runs successfully after installation.,,5,
+Additional Requirements,PEP8 Compliance,Code adheres to PEP8 standard by achieving a score of 8 or higher using pylint.,,1,
+,Docstrings,"Code blocks include comments. Code documentation includes module, class & function/method level docstrings.",,1,
+,Participation,Each module/class/function documentation contains the names of the people who worked on it.,,1,
+,Error Handling & Logging,Every function/method implements error handling that logs errors to a file using the python logging module.,,1,
+,Q&A,Q&A,,1,
+Bonus 1 - Optional,UI,"Create a user interface for all user interaction. All the widgets are labelled and aligned properly. The UI is polished and presentable, ready for sale.",,10,
+Bonus 2 - Optional,Thread,Implement threading in your scraping class to speed up scraping operations.,,5,
+,,,,,
+,Total,,0,115,
+,Total Percent,,0.00%,,
