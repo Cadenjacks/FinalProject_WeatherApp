@@ -19,7 +19,7 @@ def main():
     # ================= Scraping =================
     # This will prompt the program to start scraping for the weather data
     logger.info("Starting weather scraping...")
-    scraper = WeatherScraper(start_year=2018)
+    scraper = WeatherScraper(start_year=2022)
     weather_data = scraper.scrape_all()
     logger.info(f"Scraped {len(weather_data)} daily records.\n")
 
