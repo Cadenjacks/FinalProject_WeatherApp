@@ -1,29 +1,43 @@
-# scrape_weather.py
+"""
+scrape_weather.py
+-----------------
+WeatherScraper module for scraping Winnipeg climate data using ONLY HTML parsing.
+
+Features:
+- Extracts Min/Max/Mean temperatures for each day of each month.
+- Scrapes backward from the current year down to a given start year.
+- Automatically detects when no more data is available.
+- Provides dictionary output consumed by DBOperations.
+
+Author: Caden Jackson
+
+Created on: 11/16/2025
+Last updated: 11/23/2025
+"""
+
 import logging
-import requests
 from datetime import datetime
 from html.parser import HTMLParser
+
+import requests
 import urllib3
 
-"""
-Weather Scraper using ONLY HTML parsing.
-Scrapes Min/Max/Mean temperature data for each day of each month.
-Created by Caden Jackson
-Updated: 11/16/25
-"""
-
-# Disable HTTPS warnings (verify=False)
+# Disable HTTPS warnings 
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
-logging.basicConfig(level=logging.INFO,
-                    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-logger = logging.getLogger("weather_scraper")
+logger = logging.getLogger(__name__)
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+)
 
 
-# --------------------------------------------------------------------
-# HTML TABLE PARSER 
-# --------------------------------------------------------------------
+# ============================================================
+# SIMPLE TABLE PARSER
+# ============================================================
 class SimpleTableParser(HTMLParser):
+    """Parses HTML <td> rows into a list of row-lists."""
+
     def __init__(self):
         super().__init__()
         self.in_td = False
@@ -40,6 +54,7 @@ class SimpleTableParser(HTMLParser):
         if tag == "td":
             self.in_td = False
             self.row.append(self.current_cell.strip())
+
         elif tag == "tr":
             if self.row:
                 self.rows.append(self.row)
@@ -50,10 +65,21 @@ class SimpleTableParser(HTMLParser):
             self.current_cell += data
 
 
-# --------------------------------------------------------------------
-# MAIN SCRAPER CLASS
-# --------------------------------------------------------------------
+# ============================================================
+# WEATHER SCRAPER
+# ============================================================
 class WeatherScraper:
+    """
+    Scrapes Winnipeg climate data from Environment Canada using HTML parsing.
+
+    Attributes:
+        station_id (int): Weather station ID.
+        start_year (int): Year to scrape back to.
+        end_year (int): Usually current year.
+        timeframe (int): Environment Canada daily view timeframe.
+        daily_data (dict): Dictionary containing date → temperature values.
+    """
+
     BASE_HTML_URL = "https://climate.weather.gc.ca/climate_data/daily_data_e.html"
 
     def __init__(self, station_id=27174, start_year=2018, end_year=None, timeframe=2):
@@ -64,14 +90,20 @@ class WeatherScraper:
         self.daily_data = {}
 
     # ------------------------------------------------------------
-    # HTML SCRAPING (now real, working)
+    # FETCH SINGLE MONTH
     # ------------------------------------------------------------
     def fetch_html_for_month(self, year, month):
         """
-        Scrapes daily weather values from the HTML table.
-        Populates self.daily_data[date] = {Max, Min, Mean}
+        Scrape daily max/min/mean temperatures for a specific month.
+
+        Args:
+            year (int): Year to scrape.
+            month (int): Month to scrape.
+
+        Populates:
+            self.daily_data[YYYY-MM-DD] = {"Max": float, "Min": float, "Mean": float}
         """
-        logger.info(f"Scraping HTML weather for {year}-{month:02}")
+        logger.info("Scraping HTML weather for %d-%02d", year, month)
 
         url = (
             f"{self.BASE_HTML_URL}?StationID={self.station_id}"
@@ -80,70 +112,75 @@ class WeatherScraper:
 
         try:
             response = requests.get(url, verify=False, timeout=10)
-            if response.status_code != 200:
-                logger.warning(f"Failed to load month {year}-{month:02}")
-                return
+        except requests.RequestException as exc:
+            logger.error("Request error while scraping %d-%02d: %s", year, month, exc)
+            return
 
-            parser = SimpleTableParser()
-            parser.feed(response.text)
-            rows = parser.rows
+        if response.status_code != 200:
+            logger.warning("Failed to load month %d-%02d, status %d",
+                           year, month, response.status_code)
+            return
 
-            if not rows:
-                logger.warning(f"No table data found in HTML for {year}-{month:02}")
-                return
+        parser = SimpleTableParser()
+        parser.feed(response.text)
+        rows = parser.rows
 
-            # Extract only rows with numeric temp data (filter garbage rows)
-            day = 1
-            for row in rows:
-                if len(row) < 3:
-                    continue
+        if not rows:
+            logger.warning("No HTML table data found for %d-%02d", year, month)
+            return
 
-                try:
-                    max_t = float(row[0])
-                    min_t = float(row[1])
-                    mean_t = float(row[2])
-                except:
-                    continue  # skip summary rows
+        day = 1
+        for row in rows:
+            if len(row) < 3:
+                continue
 
-                date = f"{year}-{month:02}-{day:02}"
-                self.daily_data[date] = {
-                    "Max": max_t,
-                    "Min": min_t,
-                    "Mean": mean_t
-                }
-                day += 1
+            try:
+                max_t = float(row[0])
+                min_t = float(row[1])
+                mean_t = float(row[2])
+            except (ValueError, TypeError):
+                # Skip non-numeric rows (summary, empty, etc.)
+                continue
 
-        except Exception as e:
-            logger.error(f"HTML scraping error for {year}-{month:02}: {e}")
+            date_str = f"{year}-{month:02d}-{day:02d}"
+            self.daily_data[date_str] = {
+                "Max": max_t,
+                "Min": min_t,
+                "Mean": mean_t
+            }
+            day += 1
 
     # ------------------------------------------------------------
-    # FULL SCRAPER
+    # SCRAPE THE ENTIRE RANGE
     # ------------------------------------------------------------
     def scrape_all(self):
         """
-        Scrapes all months between end_year and start_year using HTML only.
+        Scrape all months between end_year and start_year.
+
+        Returns:
+            dict: { "YYYY-MM-DD": {"Max": float, "Min": float, "Mean": float}, ... }
         """
-        logger.info(f"Starting HTML-only weather scraping…")
+        logger.info("Starting full weather scraping (%d → %d)...",
+                    self.end_year, self.start_year)
 
         for year in range(self.end_year, self.start_year - 1, -1):
-            for month in range(12, 0, -1):
+            for month in range(12, 1 - 1, -1):  # 12 down to 1
                 self.fetch_html_for_month(year, month)
 
-        logger.info(f"Finished. Total days scraped: {len(self.daily_data)}")
+        logger.info("Finished scraping. Total days collected: %d",
+                    len(self.daily_data))
         return self.daily_data
 
 
-# --------------------------------------------------------------------
-# Allow running directly
-# --------------------------------------------------------------------
+# ============================================================
+# SELF-TEST ENTRY POINT
+# ============================================================
 if __name__ == "__main__":
     scraper = WeatherScraper()
     data = scraper.scrape_all()
 
-    print("\nSAMPLE OUTPUT (first 10 records):")
-    count = 0
-    for date, vals in data.items():
-        print(date, vals)
-        count += 1
-        if count >= 10:
+    print("\nSample records:")
+    for i, (date, values) in enumerate(data.items()):
+        print(date, values)
+        if i >= 9:
             break

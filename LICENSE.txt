@@ -1,0 +1,10 @@
+Weather App - License Agreement
+
+This software is provided for educational purposes as part of the ADEV-3005 Python programming course.
+
+You are free to install, run, and examine the software.
+You may not redistribute it or claim ownership.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND.
+
+(2025) Caden Jackson

@@ -1,0 +1,1 @@
+pylint run_file.py weather_processor.py scrape_weather.py db_operations.py dbcm.py plot_operations.py
